@@ -10,15 +10,27 @@ import (
 func main() {
 	fmt.Println("Application Started")
 
-	runner.Run(func() {
-		fmt.Println("Background task started")
+	r := runner.New()
+
+	r.Run(func() {
+		fmt.Println("Task 1 started")
 
 		time.Sleep(2 * time.Second)
 
-		fmt.Println("Background task completed")
+		fmt.Println("Task 1 completed")
 	})
 
-	fmt.Println("Main function completed")
+	r.Run(func() {
+		fmt.Println("Task 2 started")
 
-	time.Sleep(3 * time.Second)
+		time.Sleep(1 * time.Second)
+
+		fmt.Println("Task 2 completed")
+	})
+
+	fmt.Println("Waiting for tasks to finish")
+
+	r.Wait()
+
+	fmt.Println("Application shutting down")
 }
