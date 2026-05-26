@@ -1,6 +1,9 @@
 package runner
 
-import "sync"
+import (
+	"log"
+	"sync"
+)
 
 type Runner struct {
 	wg sync.WaitGroup
@@ -15,6 +18,12 @@ func (r *Runner) Run(task func()) {
 
 	go func() {
 		defer r.wg.Done()
+
+		defer func() {
+			if err := recover(); err != nil {
+				log.Printf("panic recovered: %v", err)
+			}
+		}()
 
 		task()
 	}()

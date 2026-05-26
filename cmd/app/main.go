@@ -15,22 +15,20 @@ func main() {
 	r.Run(func() {
 		fmt.Println("Task 1 started")
 
-		time.Sleep(2 * time.Second)
+		time.Sleep(1 * time.Second)
 
-		fmt.Println("Task 1 completed")
+		panic("something went wrong in task 1")
 	})
 
 	r.Run(func() {
 		fmt.Println("Task 2 started")
 
-		time.Sleep(1 * time.Second)
+		time.Sleep(2 * time.Second)
 
 		fmt.Println("Task 2 completed")
 	})
 
-	fmt.Println("Waiting for tasks to finish")
-
 	r.Wait()
 
-	fmt.Println("Application shutting down")
+	fmt.Println("Application shutdown gracefully")
 }
