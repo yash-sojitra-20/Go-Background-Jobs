@@ -1,9 +1,12 @@
 package runner
 
 import (
+	"context"
 	"log"
 	"sync"
 )
+
+type Task func(ctx context.Context)
 
 type Runner struct {
 	wg sync.WaitGroup
@@ -13,7 +16,7 @@ func New() *Runner {
 	return &Runner{}
 }
 
-func (r *Runner) Run(task func()) {
+func (r *Runner) Run(ctx context.Context, task Task) {
 	r.wg.Add(1)
 
 	go func() {
@@ -25,7 +28,7 @@ func (r *Runner) Run(task func()) {
 			}
 		}()
 
-		task()
+		task(ctx)
 	}()
 }
 

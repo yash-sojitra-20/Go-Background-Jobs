@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"time"
 
@@ -12,21 +13,30 @@ func main() {
 
 	r := runner.New()
 
-	r.Run(func() {
-		fmt.Println("Task 1 started")
+	ctx, cancel := context.WithCancel(context.Background())
 
-		time.Sleep(1 * time.Second)
+	r.Run(ctx, func(ctx context.Context) {
+		fmt.Println("Task started")
 
-		panic("something went wrong in task 1")
+		for {
+			select {
+			case <-ctx.Done():
+				fmt.Println("Task received cancellation signal")
+				return
+
+			default:
+				fmt.Println("Task working...")
+
+				time.Sleep(1 * time.Second)
+			}
+		}
 	})
 
-	r.Run(func() {
-		fmt.Println("Task 2 started")
+	time.Sleep(5 * time.Second)
 
-		time.Sleep(2 * time.Second)
+	fmt.Println("Cancelling context")
 
-		fmt.Println("Task 2 completed")
-	})
+	cancel()
 
 	r.Wait()
 
