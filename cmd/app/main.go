@@ -3,51 +3,39 @@ package main
 import (
 	"context"
 	"fmt"
-	"os"
-	"os/signal"
-	"syscall"
 	"time"
 
-	"github.com/yash-sojitra-20/Go-Background-Jobs/internal/runner"
+	"github.com/yash-sojitra-20/Go-Background-Jobs/internal/workerpool"
 )
 
 func main() {
 	fmt.Println("Application Started")
 
-	r := runner.New()
-
 	ctx, cancel := context.WithCancel(context.Background())
 
-	r.Run(ctx, func(ctx context.Context) {
-		fmt.Println("Worker started")
+	pool := workerpool.New(10)
 
-		for {
-			select {
-			case <-ctx.Done():
-				fmt.Println("Worker shutting down gracefully")
-				return
+	pool.Start(ctx, 3)
 
-			default:
-				fmt.Println("Worker processing job")
+	for i := 1; i <= 20; i++ {
+		jobID := i
 
-				time.Sleep(2 * time.Second)
-			}
-		}
-	})
+		pool.Submit(func(ctx context.Context) {
+			fmt.Printf("processing job %d\n", jobID)
 
-	sigChan := make(chan os.Signal, 1)
+			time.Sleep(2 * time.Second)
 
-	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
+			fmt.Printf("completed job %d\n", jobID)
+		})
+	}
 
-	sig := <-sigChan
+	time.Sleep(5 * time.Second)
 
-	fmt.Printf("Received signal: %v\n", sig)
-
-	fmt.Println("Initiating graceful shutdown")
+	fmt.Println("Initiating shutdown")
 
 	cancel()
 
-	r.Wait()
+	pool.Shutdown()
 
 	fmt.Println("Application shutdown complete")
 }
