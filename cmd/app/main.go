@@ -3,6 +3,9 @@ package main
 import (
 	"context"
 	"fmt"
+	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
 	"github.com/yash-sojitra-20/Go-Background-Jobs/internal/workerpool"
@@ -11,31 +14,76 @@ import (
 func main() {
 	fmt.Println("Application Started")
 
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(
+		context.Background(),
+	)
+
+	defer cancel()
 
 	pool := workerpool.New(10)
 
 	pool.Start(ctx, 3)
 
+	sigChan := make(chan os.Signal, 1)
+
+	signal.Notify(
+		sigChan,
+		syscall.SIGINT,
+		syscall.SIGTERM,
+	)
+
+	go func() {
+		sig := <-sigChan
+
+		fmt.Printf(
+			"received signal: %v\n",
+			sig,
+		)
+
+		fmt.Println(
+			"starting graceful shutdown",
+		)
+
+		cancel()
+
+		pool.Shutdown()
+
+		fmt.Println(
+			"application shutdown complete",
+		)
+
+		os.Exit(0)
+	}()
+
 	for i := 1; i <= 20; i++ {
 		jobID := i
 
-		pool.Submit(func(ctx context.Context) {
-			fmt.Printf("processing job %d\n", jobID)
+		err := pool.Submit(
+			func(ctx context.Context) {
+				fmt.Printf(
+					"processing job %d\n",
+					jobID,
+				)
 
-			time.Sleep(2 * time.Second)
+				time.Sleep(
+					2 * time.Second,
+				)
 
-			fmt.Printf("completed job %d\n", jobID)
-		})
+				fmt.Printf(
+					"completed job %d\n",
+					jobID,
+				)
+			},
+		)
+
+		if err != nil {
+			fmt.Printf(
+				"failed to submit job %d: %v\n",
+				jobID,
+				err,
+			)
+		}
 	}
 
-	time.Sleep(5 * time.Second)
-
-	fmt.Println("Initiating shutdown")
-
-	cancel()
-
-	pool.Shutdown()
-
-	fmt.Println("Application shutdown complete")
+	select {}
 }

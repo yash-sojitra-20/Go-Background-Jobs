@@ -5,7 +5,10 @@ import (
 	"log"
 )
 
-func (p *Pool) Start(ctx context.Context, workerCount int) {
+func (p *Pool) Start(
+	ctx context.Context,
+	workerCount int,
+) {
 	for i := 1; i <= workerCount; i++ {
 		p.wg.Add(1)
 
@@ -13,7 +16,10 @@ func (p *Pool) Start(ctx context.Context, workerCount int) {
 	}
 }
 
-func (p *Pool) worker(ctx context.Context, id int) {
+func (p *Pool) worker(
+	ctx context.Context,
+	id int,
+) {
 	defer p.wg.Done()
 
 	log.Printf("worker %d started", id)
@@ -21,16 +27,19 @@ func (p *Pool) worker(ctx context.Context, id int) {
 	for {
 		select {
 		case <-ctx.Done():
-			log.Printf("worker %d shutting down", id)
+			log.Printf(
+				"worker %d shutting down",
+				id,
+			)
+
 			return
 
-		case job, ok := <-p.jobs:
-			if !ok {
-				log.Printf("worker %d job channel closed", id)
-				return
-			}
-
-			p.executeJob(ctx, job, id)
+		case job := <-p.jobs:
+			p.executeJob(
+				ctx,
+				job,
+				id,
+			)
 		}
 	}
 }
