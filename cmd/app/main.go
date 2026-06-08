@@ -8,46 +8,82 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/yash-sojitra-20/Go-Background-Jobs/internal/runner"
+	"github.com/yash-sojitra-20/Go-Background-Jobs/internal/workerpool"
 )
 
 func main() {
 	fmt.Println("Application Started")
 
-	r := runner.New()
+	ctx, cancel := context.WithCancel(
+		context.Background(),
+	)
 
-	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 
-	r.Run(ctx, func(ctx context.Context) {
-		fmt.Println("Worker started")
+	pool := workerpool.New(10)
 
-		for {
-			select {
-			case <-ctx.Done():
-				fmt.Println("Worker shutting down gracefully")
-				return
-
-			default:
-				fmt.Println("Worker processing job")
-
-				time.Sleep(2 * time.Second)
-			}
-		}
-	})
+	pool.Start(ctx, 3)
 
 	sigChan := make(chan os.Signal, 1)
 
-	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
+	signal.Notify(
+		sigChan,
+		syscall.SIGINT,
+		syscall.SIGTERM,
+	)
 
-	sig := <-sigChan
+	go func() {
+		sig := <-sigChan
 
-	fmt.Printf("Received signal: %v\n", sig)
+		fmt.Printf(
+			"received signal: %v\n",
+			sig,
+		)
 
-	fmt.Println("Initiating graceful shutdown")
+		fmt.Println(
+			"starting graceful shutdown",
+		)
 
-	cancel()
+		cancel()
 
-	r.Wait()
+		pool.Shutdown()
 
-	fmt.Println("Application shutdown complete")
+		fmt.Println(
+			"application shutdown complete",
+		)
+
+		os.Exit(0)
+	}()
+
+	for i := 1; i <= 20; i++ {
+		jobID := i
+
+		err := pool.Submit(
+			func(ctx context.Context) {
+				fmt.Printf(
+					"processing job %d\n",
+					jobID,
+				)
+
+				time.Sleep(
+					2 * time.Second,
+				)
+
+				fmt.Printf(
+					"completed job %d\n",
+					jobID,
+				)
+			},
+		)
+
+		if err != nil {
+			fmt.Printf(
+				"failed to submit job %d: %v\n",
+				jobID,
+				err,
+			)
+		}
+	}
+
+	select {}
 }
