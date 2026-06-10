@@ -58,28 +58,34 @@ func main() {
 	for i := 1; i <= 20; i++ {
 		jobID := i
 
-		err := pool.Submit(
-			func(ctx context.Context) {
+		job := &workerpool.Job{
+			ID:     fmt.Sprintf("job-%d", jobID),
+			Name:   "Demo Job",
+			Status: workerpool.StatusPending,
+
+			Handler: func(ctx context.Context) error {
 				fmt.Printf(
-					"processing job %d\n",
-					jobID,
+					"processing %s\n",
+					fmt.Sprintf("job-%d", jobID),
 				)
 
-				time.Sleep(
-					2 * time.Second,
-				)
+				time.Sleep(2 * time.Second)
 
 				fmt.Printf(
-					"completed job %d\n",
-					jobID,
+					"completed %s\n",
+					fmt.Sprintf("job-%d", jobID),
 				)
+
+				return nil
 			},
-		)
+		}
+
+		err := pool.Submit(job)
 
 		if err != nil {
 			fmt.Printf(
-				"failed to submit job %d: %v\n",
-				jobID,
+				"failed to submit %s: %v\n",
+				job.ID,
 				err,
 			)
 		}

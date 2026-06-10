@@ -8,7 +8,7 @@ import (
 var ErrPoolClosed = errors.New("worker pool is closed")
 
 type Pool struct {
-	jobs chan Job
+	jobs chan *Job
 
 	wg sync.WaitGroup
 
@@ -18,12 +18,12 @@ type Pool struct {
 
 func New(bufferSize int) *Pool {
 	return &Pool{
-		jobs:     make(chan Job, bufferSize),
+		jobs: make(chan *Job, bufferSize),
 		shutdown: make(chan struct{}),
 	}
 }
 
-func (p *Pool) Submit(job Job) error {
+func (p *Pool) Submit(job *Job) error {
 	select {
 		case <-p.shutdown:
 			return ErrPoolClosed
