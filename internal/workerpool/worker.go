@@ -35,6 +35,8 @@ func (p *Pool) worker(
 			return
 
 		case job := <-p.jobs:
+			job.Status = StatusRunning
+
 			p.executeJob(
 				ctx,
 				job,
@@ -46,18 +48,34 @@ func (p *Pool) worker(
 
 func (p *Pool) executeJob(
 	ctx context.Context,
-	job Job,
+	job *Job,
 	workerID int,
 ) {
 	defer func() {
 		if err := recover(); err != nil {
+			job.Status = StatusFailed
+
 			log.Printf(
-				"worker %d recovered panic: %v",
+				"worker %d recovered panic in job %s: %v",
 				workerID,
+				job.ID,
 				err,
 			)
 		}
 	}()
 
-	job(ctx)
+	if err := job.Handler(ctx); err != nil {
+		job.Status = StatusFailed
+
+		log.Printf(
+			"worker %d job %s failed: %v",
+			workerID,
+			job.ID,
+			err,
+		)
+
+		return
+	}
+
+	job.Status = StatusCompleted
 }
