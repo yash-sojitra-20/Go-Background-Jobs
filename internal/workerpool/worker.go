@@ -10,7 +10,7 @@ func (p *Pool) Start(
 	workerCount int,
 ) {
 	for i := 1; i <= workerCount; i++ {
-		p.wg.Add(1)
+		p.workerWG.Add(1)
 
 		go p.worker(ctx, i)
 	}
@@ -20,7 +20,7 @@ func (p *Pool) worker(
 	ctx context.Context,
 	id int,
 ) {
-	defer p.wg.Done()
+	defer p.workerWG.Done()
 
 	log.Printf("worker %d started", id)
 
