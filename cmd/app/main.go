@@ -55,41 +55,45 @@ func main() {
 		os.Exit(0)
 	}()
 
-	for i := 1; i <= 20; i++ {
-		jobID := i
+	pool.StartProducer(func() {
+		for i := 1; i <= 20; i++ {
+			jobID := i
 
-		job := &workerpool.Job{
-			ID:     fmt.Sprintf("job-%d", jobID),
-			Name:   "Demo Job",
-			Status: workerpool.StatusPending,
+			job := &workerpool.Job{
+				ID:     fmt.Sprintf("job-%d", jobID),
+				Name:   "Demo Job",
+				Status: workerpool.StatusPending,
 
-			Handler: func(ctx context.Context) error {
+				Handler: func(ctx context.Context) error {
+					fmt.Printf(
+						"processing job-%d\n",
+						jobID,
+					)
+
+					time.Sleep(2 * time.Second)
+
+					fmt.Printf(
+						"completed job-%d\n",
+						jobID,
+					)
+
+					return nil
+				},
+			}
+
+			err := pool.Submit(job)
+
+			if err != nil {
 				fmt.Printf(
-					"processing %s\n",
-					fmt.Sprintf("job-%d", jobID),
+					"failed to submit %s: %v\n",
+					job.ID,
+					err,
 				)
 
-				time.Sleep(2 * time.Second)
-
-				fmt.Printf(
-					"completed %s\n",
-					fmt.Sprintf("job-%d", jobID),
-				)
-
-				return nil
-			},
+				return
+			}
 		}
-
-		err := pool.Submit(job)
-
-		if err != nil {
-			fmt.Printf(
-				"failed to submit %s: %v\n",
-				job.ID,
-				err,
-			)
-		}
-	}
+	})
 
 	select {}
 }

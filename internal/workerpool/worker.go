@@ -10,7 +10,7 @@ func (p *Pool) Start(
 	workerCount int,
 ) {
 	for i := 1; i <= workerCount; i++ {
-		p.wg.Add(1)
+		p.workerWG.Add(1)
 
 		go p.worker(ctx, i)
 	}
@@ -20,30 +20,24 @@ func (p *Pool) worker(
 	ctx context.Context,
 	id int,
 ) {
-	defer p.wg.Done()
+	defer p.workerWG.Done()
 
 	log.Printf("worker %d started", id)
 
-	for {
-		select {
-		case <-ctx.Done():
-			log.Printf(
-				"worker %d shutting down",
-				id,
-			)
+	for job := range p.jobs {
+		job.Status = StatusRunning
 
-			return
-
-		case job := <-p.jobs:
-			job.Status = StatusRunning
-
-			p.executeJob(
-				ctx,
-				job,
-				id,
-			)
-		}
+		p.executeJob(
+			ctx,
+			job,
+			id,
+		)
 	}
+
+	log.Printf(
+		"worker %d shutting down",
+		id,
+	)
 }
 
 func (p *Pool) executeJob(

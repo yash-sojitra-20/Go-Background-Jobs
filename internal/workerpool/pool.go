@@ -10,7 +10,8 @@ var ErrPoolClosed = errors.New("worker pool is closed")
 type Pool struct {
 	jobs chan *Job
 
-	wg sync.WaitGroup
+	producerWG sync.WaitGroup
+	workerWG   sync.WaitGroup
 
 	shutdown chan struct{}
 	once     sync.Once
@@ -18,25 +19,39 @@ type Pool struct {
 
 func New(bufferSize int) *Pool {
 	return &Pool{
-		jobs: make(chan *Job, bufferSize),
+		jobs:     make(chan *Job, bufferSize),
 		shutdown: make(chan struct{}),
 	}
 }
 
 func (p *Pool) Submit(job *Job) error {
 	select {
-		case <-p.shutdown:
-			return ErrPoolClosed
+	case <-p.shutdown:
+		return ErrPoolClosed
 
-		case p.jobs <- job:
-			return nil
+	case p.jobs <- job:
+		return nil
 	}
 }
 
 func (p *Pool) Shutdown() {
 	p.once.Do(func() {
 		close(p.shutdown)
+
+		p.producerWG.Wait()
+
+		close(p.jobs)
 	})
 
-	p.wg.Wait()
+	p.workerWG.Wait()
+}
+
+func (p *Pool) StartProducer(fn func()) {
+	p.producerWG.Add(1)
+
+	go func() {
+		defer p.producerWG.Done()
+
+		fn()
+	}()
 }
