@@ -24,26 +24,20 @@ func (p *Pool) worker(
 
 	log.Printf("worker %d started", id)
 
-	for {
-		select {
-		case <-ctx.Done():
-			log.Printf(
-				"worker %d shutting down",
-				id,
-			)
+	for job := range p.jobs {
+		job.Status = StatusRunning
 
-			return
-
-		case job := <-p.jobs:
-			job.Status = StatusRunning
-
-			p.executeJob(
-				ctx,
-				job,
-				id,
-			)
-		}
+		p.executeJob(
+			ctx,
+			job,
+			id,
+		)
 	}
+
+	log.Printf(
+		"worker %d shutting down",
+		id,
+	)
 }
 
 func (p *Pool) executeJob(

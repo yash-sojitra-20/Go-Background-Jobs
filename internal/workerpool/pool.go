@@ -37,6 +37,10 @@ func (p *Pool) Submit(job *Job) error {
 func (p *Pool) Shutdown() {
 	p.once.Do(func() {
 		close(p.shutdown)
+
+		p.producerWG.Wait()
+
+		close(p.jobs)
 	})
 
 	p.workerWG.Wait()
