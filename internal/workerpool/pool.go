@@ -41,3 +41,13 @@ func (p *Pool) Shutdown() {
 
 	p.workerWG.Wait()
 }
+
+func (p *Pool) StartProducer(fn func()) {
+	p.producerWG.Add(1)
+
+	go func() {
+		defer p.producerWG.Done()
+
+		fn()
+	}()
+}
