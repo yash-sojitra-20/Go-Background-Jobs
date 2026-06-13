@@ -14,11 +14,13 @@ import (
 func main() {
 	fmt.Println("Application Started")
 
-	ctx, cancel := context.WithCancel(
-		context.Background(),
-	)
+	// ctx, cancel := context.WithCancel(
+	// 	context.Background(),
+	// )
 
-	defer cancel()
+	// defer cancel()
+
+	ctx := context.Background()
 
 	pool := workerpool.New(10)
 
@@ -44,7 +46,7 @@ func main() {
 			"starting graceful shutdown",
 		)
 
-		cancel()
+		// cancel()
 
 		pool.Shutdown()
 
